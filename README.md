@@ -1,36 +1,26 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TTK Constructions | Infrastructure Excellence
 
-## Getting Started
+## 🏗️ Project Overview
 
-First, run the development server:
+This is the official website codebase for TTK Constructions, a leading government contractor specializing in infrastructure projects across South India. This project is a high-performance **Next.js 14** application using the **App Router** architecture, **TypeScript**, and **Tailwind CSS**.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+The primary goal of the conversion was to create a modern, performant, and maintainable foundation for future development, including integration with a headless CMS or backend service like Supabase.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Key Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+* **Responsive Layout:** Fully optimized for desktop, tablet, and mobile viewing.
+* **Performance Focused:** Utilizes Next.js features like Image Optimization and Server Components for fast initial loading.
+* **Custom Styling:** Implements the company's distinct color palette and the custom **embossed text effect** for headings.
+* **Interactive Slideshow:** Client-side component logic for the main hero carousel.
+* **Modular Architecture:** Components are structured for easy maintenance and scaling (Layout, UI, Data).
+* **Supabase Ready:** Prepared data structures (`data/homeData.ts`) for seamless integration with a Supabase backend.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 💻 Tech Stack
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Category | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Framework** | **Next.js 14** (App Router) | React framework for server-side rendering and routing. |
+| **Language** | **TypeScript** | Enhances code quality and predictability. |
+| **Styling** | **Tailwind CSS** | Utility-first CSS framework for rapid UI development. |
+| **Plugins** | `tailwindcss-textshadow` | Enables the custom embossed heading effect. |
+| **Backend** | `@supabase/supabase-js` | Client library ready for future backend integration. |
