@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function ForgotPasswordForm() {
   const [showOtp, setShowOtp] = useState(false);
-  const otpInputs = useRef<(HTMLInputElement[]>([]);
+  const otpInputs = useRef<(HTMLInputElement[]>[]);
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
