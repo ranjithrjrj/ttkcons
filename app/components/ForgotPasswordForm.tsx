@@ -3,40 +3,86 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 
+// Define the number of OTP inputs
+const OTP_LENGTH = 6;
+
 export default function ForgotPasswordForm() {
   const [showOtp, setShowOtp] = useState(false);
-  const otpInputs = useRef<(HTMLInputElement | null)[]>([]);
+  
+  // FIX 1: Corrected the syntax for the useRef type. 
+  // It should be useRef<HTMLInputElement[]>([]), not useRef<(HTMLInputElement[]>[]).
+  // FIX 2: Used the correct initial value for a ref array, which is []
+  const otpInputs = useRef<Array<HTMLInputElement | null>>([]);
+  
+  // Custom function to ensure the ref array is correctly populated
+  const setInputRef = (el: HTMLInputElement | null, index: number) => {
+    // Ensure the array is sized correctly or the element is not null
+    if (el) {
+        otpInputs.current[index] = el;
+    } else {
+        // Optional: Clean up null entries if inputs are conditionally unmounted,
+        // but for a static 6 inputs, simply allowing nulls is cleaner.
+    }
+  }
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setShowOtp(true);
+    
     setTimeout(() => {
-      otpInputs.current[0]?.focus();
+      // FIX 3: Added null/undefined check for the element before calling .focus()
+      // The DOM elements might not be immediately available right after setShowOtp(true)
+      // due to React's rendering cycle, hence the `setTimeout`.
+      // We check if the array exists and the first element is present before calling focus.
+      if (otpInputs.current[0]) {
+        otpInputs.current[0].focus();
+      }
     }, 100);
   };
 
   const handleOtpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const otpCode = otpInputs.current.map(input => input?.value || '').join('');
+    
+    // FIX 4: Filter out potential 'null' entries before mapping to values
+    const otpCode = otpInputs.current
+      .filter((input): input is HTMLInputElement => input !== null)
+      .map(input => input.value || '')
+      .join('');
+      
     console.log('OTP Submitted:', otpCode);
+    
+    // Basic validation to ensure all fields are filled
+    if (otpCode.length !== OTP_LENGTH) {
+        alert('Please enter the complete 6-digit code.');
+        return;
+    }
+    
     alert('Code verified! (Simulation) Redirecting to New Password Page...');
   };
 
   const handleOtpInput = (index: number, value: string) => {
-    if (value.length === 1 && index < otpInputs.current.length - 1) {
-      otpInputs.current[index + 1]?.focus();
+    // Only proceed if a digit was entered
+    if (value.length === 1 && index < OTP_LENGTH - 1) {
+      // FIX 5: Use a null check when focusing the next input
+      if (otpInputs.current[index + 1]) {
+        otpInputs.current[index + 1]?.focus();
+      }
     }
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !e.currentTarget.value && index > 0) {
-      otpInputs.current[index - 1]?.focus();
+      // FIX 6: Use a null check when focusing the previous input
+      if (otpInputs.current[index - 1]) {
+        otpInputs.current[index - 1]?.focus();
+      }
     }
   };
 
+  // --- RENDERING ---
   return (
     <>
-      {/* Email Entry Panel */}
+      {/* Email Entry Panel (No changes needed here) */}
       <div className={`transition-opacity duration-500 ${showOtp ? 'hidden' : ''}`}>
         <p className="text-center text-gray-600 mb-6">
           Enter your registered email address to receive a verification code.
@@ -71,30 +117,26 @@ export default function ForgotPasswordForm() {
         </p>
         <form onSubmit={handleOtpSubmit}>
           <div className="mb-8 flex justify-center items-center gap-2">
-            {[0, 1, 2].map((index) => (
-              <input
-                key={index}
-                ref={(el) => (otpInputs.current[index] = el)}
-                type="number"
-                maxLength={1}
-                required
-                onChange={(e) => handleOtpInput(index, e.target.value)}
-                onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                className="w-12 h-14 text-center text-2xl font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-            ))}
-            <span className="text-2xl text-gray-400 mx-1">—</span>
-            {[3, 4, 5].map((index) => (
-              <input
-                key={index}
-                ref={(el) => (otpInputs.current[index] = el)}
-                type="number"
-                maxLength={1}
-                required
-                onChange={(e) => handleOtpInput(index, e.target.value)}
-                onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                className="w-12 h-14 text-center text-2xl font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
+            
+            {/* Unified map for all 6 inputs to ensure correct indexing and spacing */}
+            {Array.from({ length: OTP_LENGTH }).map((_, index) => (
+              <>
+                <input
+                  key={index}
+                  // FIX 7: Use the custom setInputRef to correctly populate the array
+                  ref={(el) => setInputRef(el, index)}
+                  // The type is 'text' since 'number' type on mobile can bypass maxLength
+                  type="text" 
+                  maxLength={1}
+                  required
+                  onChange={(e) => handleOtpInput(index, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  className="w-12 h-14 text-center text-2xl font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200"
+                />
+                
+                {/* Add the separator after the third input only */}
+                {index === 2 && <span className="text-2xl text-gray-400 mx-1">—</span>}
+              </>
             ))}
           </div>
 
