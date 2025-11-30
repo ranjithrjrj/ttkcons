@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import ConditionalLayout from './components/ConditionalLayout';
 
 export const metadata: Metadata = {
   title: 'TTK Constructions | Infrastructure Excellence in Madurai',
@@ -17,9 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-gray-100 text-gray-800">
-        <Navbar />
-        {children}
-        <Footer />
+        <ConditionalLayout>
+          {children}
+        </ConditionalLayout>
       </body>
     </html>
   );
