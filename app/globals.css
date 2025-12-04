@@ -61,3 +61,58 @@
 .animate-spin-slow {
   animation: spin-slow 10s linear infinite;
 }
+
+/* Custom styling for react-confirm-alert */
+.react-confirm-alert-overlay {
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+.react-confirm-alert-body {
+  font-family: inherit;
+  width: 400px;
+  padding: 30px;
+  text-align: center;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 20px 75px rgba(0, 0, 0, 0.23);
+}
+
+.react-confirm-alert-body > h1 {
+  margin-top: 0;
+  font-size: 24px;
+  color: #1e3a8a;
+}
+
+.react-confirm-alert-button-group {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 10px;
+}
+
+.react-confirm-alert-button-group > button {
+  padding: 10px 30px;
+  border: none;
+  border-radius: 5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.react-confirm-alert-button-group > button:first-child {
+  background: #ef4444;
+  color: white;
+}
+
+.react-confirm-alert-button-group > button:first-child:hover {
+  background: #dc2626;
+}
+
+.react-confirm-alert-button-group > button:last-child {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.react-confirm-alert-button-group > button:last-child:hover {
+  background: #d1d5db;
+}
