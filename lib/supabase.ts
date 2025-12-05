@@ -31,6 +31,7 @@ export interface Project {
   summary?: string;
   location?: string;
   is_featured?: boolean;
+  show_on_website?: boolean;
   created_at?: string;
   updated_at?: string;
   // Relations
