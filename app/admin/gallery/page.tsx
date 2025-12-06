@@ -29,8 +29,15 @@ import {
 
 type Section = 'organize-albums' | 'upload-photos' | 'manage-categories' | 'edit-album';
 
+type ConfirmationDialogProps = {
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onClose: () => void;
+};
+
 // Custom Confirmation Component (replaces browser's confirm())
-const ConfirmationDialog = ({ title, message, onConfirm, onClose }) => (
+const ConfirmationDialog = ({ title, message, onConfirm, onClose }: ConfirmationDialogProps) => (
   <div className="p-6 bg-white rounded-xl shadow-2xl border border-gray-200 w-80 max-w-sm">
     <h1 className="text-xl font-bold text-gray-900 mb-2">{title}</h1>
     <p className="text-gray-600 mb-6">{message}</p>
