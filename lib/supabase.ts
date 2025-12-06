@@ -1,12 +1,59 @@
 // lib/supabase.ts
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+
+// Auth helper functions
+export const signIn = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  return { data, error };
+};
+
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  return { error };
+};
+
+export const getCurrentUser = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  return { user, error };
+};
+
+export const getSession = async () => {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  return { session, error };
+};
+
+// Check if user is an admin by querying admin_users table
+export const checkAdminUser = async (email: string) => {
+  const { data, error } = await supabase
+    .from('admin_users')
+    .select('*')
+    .eq('email', email)
+    .eq('is_active', true)
+    .single();
+  
+  return { data, error };
+};
 
 // Types based on your database schema
+export interface AdminUser {
+  id: string; // uuid
+  email: string;
+  password_hash: string;
+  full_name: string;
+  role: string;
+  is_active: boolean;
+  last_login?: string;
+  created_at?: string;
+}
+
 export interface Category {
   id: number;
   name: string;

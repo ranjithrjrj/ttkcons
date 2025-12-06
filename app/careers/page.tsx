@@ -1,8 +1,11 @@
+// app/careers/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import toast, { Toaster } from 'react-hot-toast';
+import JobDetailsModal from '@/app/components/JobDetailsModal';
+import Pagination from '@/app/components/Pagination';
 
 interface JobPosting {
   id: number;
@@ -14,20 +17,25 @@ interface JobPosting {
   salary_range: string | null;
   experience_required: string | null;
   requirements: string;
+  status: string;
+  is_featured: boolean;
 }
 
+interface ModalState {
+  job: JobPosting;
+  canApply: boolean;
+}
+
+const ITEMS_PER_PAGE = 6;
+
 export default function CareersPage() {
-  const [jobs, setJobs] = useState<JobPosting[]>([]);
-  const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null);
+  const [activeJobs, setActiveJobs] = useState<JobPosting[]>([]);
+  const [previousOpenings, setPreviousOpenings] = useState<JobPosting[]>([]);
+  const [modalState, setModalState] = useState<ModalState | null>(null); 
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   
-  const [applicationData, setApplicationData] = useState({
-    full_name: '',
-    email: '',
-    phone: '',
-    resume: null as File | null
-  });
+  const [activeJobsPage, setActiveJobsPage] = useState(1);
+  const [previousOpeningsPage, setPreviousOpeningsPage] = useState(1);
 
   useEffect(() => {
     fetchJobs();
@@ -38,11 +46,16 @@ export default function CareersPage() {
       const { data, error } = await supabase
         .from('job_postings')
         .select('*')
-        .eq('status', 'Active')
+        .order('is_featured', { ascending: false })
         .order('posted_date', { ascending: false });
 
       if (error) throw error;
-      setJobs(data || []);
+      
+      const allJobs: JobPosting[] = data || [];
+      
+      setActiveJobs(allJobs.filter(job => job.status === 'Active'));
+      setPreviousOpenings(allJobs.filter(job => job.status !== 'Active'));
+
     } catch (error) {
       console.error('Error fetching jobs:', error);
     } finally {
@@ -50,75 +63,27 @@ export default function CareersPage() {
     }
   };
 
-  const openModal = (job: JobPosting) => {
-    setSelectedJob(job);
-    setApplicationData({
-      full_name: '',
-      email: '',
-      phone: '',
-      resume: null
-    });
+  const openModal = (job: JobPosting, canApply: boolean) => {
+    setModalState({ job, canApply });
   };
 
   const closeModal = () => {
-    setSelectedJob(null);
+    setModalState(null);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setApplicationData({ ...applicationData, resume: e.target.files[0] });
-    }
-  };
+  // Pagination for active jobs
+  const activeJobsTotalPages = Math.ceil(activeJobs.length / ITEMS_PER_PAGE);
+  const paginatedActiveJobs = activeJobs.slice(
+    (activeJobsPage - 1) * ITEMS_PER_PAGE,
+    activeJobsPage * ITEMS_PER_PAGE
+  );
 
-  const handleSubmit = async () => {
-    if (!applicationData.resume || !selectedJob) {
-      toast.error('Please fill all required fields');
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      // Generate unique filename
-      const timestamp = Date.now();
-      const fileExt = applicationData.resume.name.split('.').pop();
-      const filePath = `${timestamp}.${fileExt}`;
-
-      // Upload resume to storage
-      const { error: uploadError } = await supabase.storage
-        .from('resumes')
-        .upload(filePath, applicationData.resume);
-
-      if (uploadError) throw uploadError;
-
-      // Insert application
-      const { error: insertError } = await supabase
-        .from('job_applications')
-        .insert([{
-          job_posting_id: selectedJob.id,
-          applicant_name: applicationData.full_name,
-          email: applicationData.email,
-          phone: applicationData.phone,
-          resume_url: filePath,
-          status: 'Pending Review',
-          applied_date: new Date().toISOString().split('T')[0]
-        }]);
-
-      if (insertError) throw insertError;
-
-      toast.success('Application submitted successfully! We will contact you soon.');
-      closeModal();
-    } catch (error: any) {
-      console.error('Error submitting application:', error);
-      toast.error(error.message || 'Error submitting application. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const getRequirementsList = (requirements: string) => {
-    return requirements.split('\n').filter(req => req.trim());
-  };
+  // Pagination for previous openings
+  const previousOpeningsTotalPages = Math.ceil(previousOpenings.length / ITEMS_PER_PAGE);
+  const paginatedPreviousOpenings = previousOpenings.slice(
+    (previousOpeningsPage - 1) * ITEMS_PER_PAGE,
+    previousOpeningsPage * ITEMS_PER_PAGE
+  );
 
   if (loading) {
     return (
@@ -173,41 +138,99 @@ export default function CareersPage() {
       <section className="py-20 bg-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-extrabold text-center text-amber-500 uppercase mb-12">
-            Current Vacancies
+            Job Openings
           </h2>
-
+          
           <div className="space-y-6">
             <h3 className="text-2xl font-bold text-gray-900 uppercase border-b border-amber-500 pb-2 mb-4">
-              Active Openings
+              Current Vacancies ({activeJobs.length})
             </h3>
 
-            {jobs.length === 0 ? (
+            {activeJobs.length === 0 ? (
               <div className="bg-white p-8 rounded-lg shadow-lg text-center">
                 <p className="text-xl text-gray-600">No active job openings at the moment. Check back soon!</p>
               </div>
             ) : (
-              jobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="bg-white p-6 rounded-lg shadow-xl flex flex-col md:flex-row justify-between items-center hover:shadow-2xl transition duration-300 border-l-8 border-amber-500"
-                >
-                  <div className="mb-4 md:mb-0 md:w-3/4 text-center md:text-left">
-                    <h3 className="text-2xl font-bold text-blue-900">{job.title}</h3>
-                    <p className="text-gray-600 mt-1">{job.location} | {job.employment_type}</p>
-                    {job.experience_required && (
-                      <p className="text-sm text-blue-700 mt-2">{job.experience_required} required.</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => openModal(job)}
-                    className="bg-amber-500 text-blue-900 font-bold px-8 py-3 rounded shadow-xl hover:bg-amber-600 transition w-full md:w-auto"
+              <>
+                {paginatedActiveJobs.map((job) => (
+                  <div
+                    key={job.id}
+                    className={`bg-white p-6 rounded-lg shadow-xl flex flex-col md:flex-row justify-between items-center hover:shadow-2xl transition duration-300 ${
+                      job.is_featured 
+                        ? 'border-l-8 border-amber-500 bg-gradient-to-r from-amber-50 to-white relative' 
+                        : 'border-l-8 border-amber-500'
+                    }`}
                   >
-                    Apply Now
-                  </button>
-                </div>
-              ))
+                    {job.is_featured && (
+                      <div className="absolute top-0 right-0 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
+                        ⭐ FEATURED
+                      </div>
+                    )}
+                    <div className="mb-4 md:mb-0 md:w-3/4 text-center md:text-left">
+                      <h3 className="text-2xl font-bold text-blue-900">{job.title}</h3>
+                      <p className="text-gray-600 mt-1">{job.location} | {job.employment_type}</p>
+                      {job.experience_required && (
+                        <p className="text-sm text-blue-700 mt-2">{job.experience_required} required.</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => openModal(job, true)} 
+                      className={`font-bold px-8 py-3 rounded shadow-xl transition w-full md:w-auto ${
+                        job.is_featured
+                          ? 'bg-amber-600 text-white hover:bg-amber-700'
+                          : 'bg-amber-500 text-blue-900 hover:bg-amber-600'
+                      }`}
+                    >
+                      Apply Now
+                    </button>
+                  </div>
+                ))}
+
+                {activeJobsTotalPages > 1 && (
+                  <Pagination
+                    currentPage={activeJobsPage}
+                    totalPages={activeJobsTotalPages}
+                    onPageChange={setActiveJobsPage}
+                  />
+                )}
+              </>
             )}
           </div>
+          
+          {previousOpenings.length > 0 && (
+            <div className="space-y-6 mt-16">
+              <h3 className="text-2xl font-bold text-gray-900 uppercase border-b border-blue-900 pb-2 mb-4">
+                  Previous Openings ({previousOpenings.length})
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {paginatedPreviousOpenings.map((job) => (
+                      <div key={job.id} 
+                           className="bg-white p-6 rounded-lg shadow-lg border-l-4 border-gray-400 cursor-pointer hover:shadow-xl transition"
+                           onClick={() => openModal(job, false)} 
+                      >
+                          <h4 className="text-xl font-bold text-gray-800">{job.title}</h4>
+                          <p className="text-sm text-gray-500 mt-1">{job.department}</p>
+                          <p className="text-sm text-gray-500 mt-1">{job.location}</p>
+                          <div className="mt-3">
+                              <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                                  {job.status}
+                              </span>
+                          </div>
+                          <p className="mt-3 text-sm text-blue-600 font-semibold hover:underline">View Details</p>
+                      </div>
+                  ))}
+              </div>
+
+              {previousOpeningsTotalPages > 1 && (
+                <Pagination
+                  currentPage={previousOpeningsPage}
+                  totalPages={previousOpeningsTotalPages}
+                  onPageChange={setPreviousOpeningsPage}
+                />
+              )}
+            </div>
+          )}
 
           <div className="text-center mt-12 p-6 bg-blue-900 text-white rounded-lg shadow-lg">
             <p className="text-xl font-semibold mb-3">
@@ -223,121 +246,13 @@ export default function CareersPage() {
         </div>
       </section>
 
-      {selectedJob && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={closeModal}
-              className="sticky top-0 right-0 float-right m-4 text-gray-400 hover:text-gray-700 bg-white p-2 rounded-full shadow-lg z-10"
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            <div className="p-8 pt-0">
-              <h2 className="text-3xl font-extrabold text-blue-900 mb-2">Application for:</h2>
-
-              <div className="mb-6 p-4 bg-amber-500 rounded-lg shadow-md">
-                <p className="text-2xl font-bold text-gray-900 uppercase">{selectedJob.title}</p>
-              </div>
-
-              <div className="mb-8 max-h-64 overflow-y-auto pr-4">
-                <h3 className="text-xl font-bold text-blue-700 mb-3 uppercase border-b pb-2">Job Description</h3>
-                <p className="text-gray-700 mb-4 leading-relaxed">{selectedJob.description}</p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="p-3 bg-gray-100 rounded-lg">
-                    <p className="text-sm font-semibold text-gray-600">Location:</p>
-                    <p className="text-md font-medium text-gray-900">{selectedJob.location}</p>
-                  </div>
-                  {selectedJob.salary_range && (
-                    <div className="p-3 bg-gray-100 rounded-lg">
-                      <p className="text-sm font-semibold text-gray-600">Salary:</p>
-                      <p className="text-md font-medium text-gray-900">{selectedJob.salary_range}</p>
-                    </div>
-                  )}
-                </div>
-
-                <h3 className="text-xl font-bold text-blue-700 mb-3 uppercase border-b pb-2">Key Requirements</h3>
-                <ul className="list-disc list-inside text-gray-700 space-y-2 pl-4">
-                  {getRequirementsList(selectedJob.requirements).map((req, idx) => (
-                    <li key={idx}>{req}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <h3 className="text-xl font-bold text-blue-900 mb-4 uppercase border-b pb-2">Your Details</h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={applicationData.full_name}
-                    onChange={(e) => setApplicationData({ ...applicationData, full_name: e.target.value })}
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={applicationData.email}
-                    onChange={(e) => setApplicationData({ ...applicationData, email: e.target.value })}
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={applicationData.phone}
-                    onChange={(e) => setApplicationData({ ...applicationData, phone: e.target.value })}
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Upload CV/Resume (.pdf, .docx) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="file"
-                    onChange={handleFileChange}
-                    required
-                    accept=".pdf,.doc,.docx"
-                    className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={closeModal}
-                  className="px-6 py-2 border border-gray-300 rounded-md text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="bg-amber-500 text-blue-900 font-bold px-8 py-2 rounded shadow-md hover:bg-amber-600 transition disabled:opacity-50"
-                >
-                  {submitting ? 'Submitting...' : 'Submit Application'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {modalState && (
+        <JobDetailsModal
+          job={modalState.job}
+          canApply={modalState.canApply}
+          onClose={closeModal}
+          onApplicationSuccess={closeModal} 
+        />
       )}
     </main>
   );

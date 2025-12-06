@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import LogoutButton from './LogoutButton';
 
 export default function AdminNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -170,13 +171,12 @@ export default function AdminNavbar() {
                 <i className="fas fa-key w-5 mr-3 text-gray-600"></i>
                 Change Password
               </Link>
-              <Link
-                href="/login"
-                className="block px-4 py-3 text-sm hover:bg-red-50 text-red-600 transition-colors"
+              <LogoutButton
+                className="w-full text-left px-4 py-3 text-sm hover:bg-red-50 text-red-600 transition-colors"
               >
                 <i className="fas fa-sign-out-alt w-5 mr-3"></i>
                 Logout
-              </Link>
+              </LogoutButton>
             </div>
           </div>
 
@@ -317,13 +317,12 @@ export default function AdminNavbar() {
                     >
                       <i className="fas fa-key mr-2"></i> Change Password
                     </Link>
-                    <Link
-                      href="/login"
-                      className="block px-3 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 text-center"
-                      onClick={() => setIsMobileMenuOpen(false)}
+                    <LogoutButton
+                      className="w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-red-600 text-white hover:bg-red-700 text-center"
+                      onLogoutStart={() => setIsMobileMenuOpen(false)}
                     >
                       <i className="fas fa-sign-out-alt mr-2"></i> Logout
-                    </Link>
+                    </LogoutButton>
                   </div>
                 )}
               </div>

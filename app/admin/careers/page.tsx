@@ -1,9 +1,12 @@
+// app/admin/careers/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
+import AdminNavbar from '../components/AdminNavbar';
 import { supabase } from '@/lib/supabase';
 import toast, { Toaster } from 'react-hot-toast';
 import { confirmAlert } from 'react-confirm-alert';
+import Pagination from '@/app/components/Pagination';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 
 type Section = 'manage-jobs' | 'add-job' | 'applications' | 'manage-departments';
@@ -19,11 +22,12 @@ interface JobPosting {
   experience_required: string | null;
   requirements: string;
   status: string;
+  is_featured: boolean;
   posted_date: string;
 }
 
 interface JobApplication {
-  id: number;
+  id: string;
   job_posting_id: number;
   applicant_name: string;
   email: string;
@@ -42,6 +46,8 @@ interface Department {
   is_active: boolean;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export default function AdminCareers() {
   const [activeSection, setActiveSection] = useState<Section>('manage-jobs');
   const [jobs, setJobs] = useState<JobPosting[]>([]);
@@ -51,6 +57,9 @@ export default function AdminCareers() {
   const [editingJob, setEditingJob] = useState<JobPosting | null>(null);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [selectedResume, setSelectedResume] = useState<{ url: string; name: string } | null>(null);
+  
+  const [jobsCurrentPage, setJobsCurrentPage] = useState(1);
+  const [applicationsCurrentPage, setApplicationsCurrentPage] = useState(1);
 
   const [jobForm, setJobForm] = useState({
     title: '',
@@ -61,7 +70,8 @@ export default function AdminCareers() {
     salary_range: '',
     experience_required: '',
     requirements: '',
-    status: 'Active'
+    status: 'Active',
+    is_featured: false
   });
 
   const [deptForm, setDeptForm] = useState({
@@ -81,6 +91,7 @@ export default function AdminCareers() {
       const { data, error } = await supabase
         .from('job_postings')
         .select('*')
+        .order('is_featured', { ascending: false })
         .order('posted_date', { ascending: false });
 
       if (error) throw error;
@@ -117,7 +128,7 @@ export default function AdminCareers() {
         .from('categories')
         .select('*')
         .eq('type', 'jobs')
-        .order('display_order');
+        .order('display_order', { ascending: true });
 
       if (error) throw error;
       setDepartments(data || []);
@@ -170,7 +181,8 @@ export default function AdminCareers() {
       salary_range: job.salary_range || '',
       experience_required: job.experience_required || '',
       requirements: job.requirements,
-      status: job.status
+      status: job.status,
+      is_featured: job.is_featured
     });
     setActiveSection('add-job');
   };
@@ -213,11 +225,12 @@ export default function AdminCareers() {
       salary_range: '',
       experience_required: '',
       requirements: '',
-      status: 'Active'
+      status: 'Active',
+      is_featured: false
     });
   };
 
-  const handleStatusChange = async (appId: number, newStatus: string) => {
+  const handleStatusChange = async (appId: string, newStatus: string) => {
     try {
       const { error } = await supabase
         .from('job_applications')
@@ -227,7 +240,8 @@ export default function AdminCareers() {
       if (error) throw error;
       toast.success('Status updated');
       fetchApplications();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error updating status:', error);
       toast.error('Failed to update status');
     }
   };
@@ -323,20 +337,74 @@ export default function AdminCareers() {
   };
 
   const handleToggleDeptStatus = async (id: number, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .update({ 
-          is_active: !currentStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
+    const action = currentStatus ? 'Deactivate' : 'Activate';
 
-      if (error) throw error;
-      toast.success(currentStatus ? 'Deactivated' : 'Activated');
-      fetchDepartments();
+    confirmAlert({
+      title: `${action} Department`,
+      message: `Are you sure you want to ${action.toLowerCase()} this department?`,
+      buttons: [
+        {
+          label: `Yes, ${action}`,
+          onClick: async () => {
+            try {
+              const { error } = await supabase
+                .from('categories')
+                .update({ 
+                  is_active: !currentStatus,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', id);
+
+              if (error) throw error;
+              toast.success(`${action}d successfully!`);
+              fetchDepartments();
+            } catch (error) {
+              console.error(`Error ${action.toLowerCase()}ing status:`, error);
+              toast.error(`Failed to ${action.toLowerCase()} department`);
+            }
+          }
+        },
+        { label: 'Cancel', onClick: () => {} }
+      ]
+    });
+  };
+
+  const handleMoveDept = async (id: number, direction: 'up' | 'down') => {
+    const sortedDepartments = [...departments].sort((a, b) => a.display_order - b.display_order);
+    const currentIndexInSorted = sortedDepartments.findIndex(d => d.id === id);
+
+    if (currentIndexInSorted === -1) return;
+
+    let targetIndexInSorted: number;
+    if (direction === 'up' && currentIndexInSorted > 0) {
+        targetIndexInSorted = currentIndexInSorted - 1;
+    } else if (direction === 'down' && currentIndexInSorted < sortedDepartments.length - 1) {
+        targetIndexInSorted = currentIndexInSorted + 1;
+    } else {
+        return;
+    }
+
+    const currentDept = sortedDepartments[currentIndexInSorted];
+    const targetDept = sortedDepartments[targetIndexInSorted];
+
+    try {
+        const updates = [
+            supabase.from('categories').update({ display_order: targetDept.display_order }).eq('id', currentDept.id),
+            supabase.from('categories').update({ display_order: currentDept.display_order }).eq('id', targetDept.id),
+        ];
+
+        const results = await Promise.all(updates);
+        
+        if (results.some(res => res.error)) {
+            results.forEach(res => res.error && console.error('Swap Error:', res.error));
+            throw new Error('One or more updates failed during swap.');
+        }
+
+        toast.success('Department order updated!');
+        fetchDepartments();
     } catch (error) {
-      toast.error('Failed to update status');
+        console.error('Error swapping department order:', error);
+        toast.error('Failed to update department order');
     }
   };
 
@@ -347,10 +415,23 @@ export default function AdminCareers() {
 
   const activeDepartments = departments.filter(d => d.is_active);
 
+  // Pagination calculations
+  const jobsTotalPages = Math.ceil(jobs.length / ITEMS_PER_PAGE);
+  const paginatedJobs = jobs.slice(
+    (jobsCurrentPage - 1) * ITEMS_PER_PAGE,
+    jobsCurrentPage * ITEMS_PER_PAGE
+  );
+
+  const applicationsTotalPages = Math.ceil(applications.length / ITEMS_PER_PAGE);
+  const paginatedApplications = applications.slice(
+    (applicationsCurrentPage - 1) * ITEMS_PER_PAGE,
+    applicationsCurrentPage * ITEMS_PER_PAGE
+  );
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Toaster position="top-right" />
-      
+      <AdminNavbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <header className="pb-6 border-b border-gray-300 mb-8">
           <h1 className="text-4xl font-extrabold text-gray-900">Careers Management</h1>
@@ -393,39 +474,70 @@ export default function AdminCareers() {
             {loading ? (
               <div className="text-center py-8">Loading...</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-6 py-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {jobs.map((job) => (
-                      <tr key={job.id}>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{job.title}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{job.department}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{job.location}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 text-xs font-semibold rounded-full ${
-                            job.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {job.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm space-x-2">
-                          <button onClick={() => handleEditJob(job)} className="text-blue-600 hover:text-blue-900">✏️</button>
-                          <button onClick={() => handleDeleteJob(job.id)} className="text-red-600 hover:text-red-900">🗑️</button>
-                        </td>
+              <>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedJobs.map((job) => (
+                        <tr key={job.id} className={job.is_featured ? 'bg-amber-50' : ''}>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            <div className="flex items-center gap-2">
+                              {job.title}
+                              {job.is_featured && (
+                                <span className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                                  ⭐ FEATURED
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">{job.department}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500">{job.location}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2 text-xs font-semibold rounded-full ${
+                              job.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {job.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm space-x-3 flex items-center justify-center">
+                            <button 
+                              onClick={() => handleEditJob(job)} 
+                              className="p-2 text-[#1e3a8a] hover:bg-blue-50 rounded"
+                              title="Edit Job"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteJob(job.id)} 
+                              className="p-2 text-red-600 hover:bg-red-50 rounded"
+                              title="Delete Job"
+                            >
+                              <i className="fas fa-trash-alt"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {jobsTotalPages > 1 && (
+                  <Pagination
+                    currentPage={jobsCurrentPage}
+                    totalPages={jobsTotalPages}
+                    onPageChange={setJobsCurrentPage}
+                  />
+                )}
+              </>
             )}
           </div>
         )}
@@ -520,6 +632,32 @@ export default function AdminCareers() {
                 />
               </div>
 
+              <div className="flex items-center space-x-3 pt-2">
+                <input
+                  id="job-status-toggle"
+                  type="checkbox"
+                  checked={jobForm.status === 'Active'}
+                  onChange={(e) => setJobForm({ ...jobForm, status: e.target.checked ? 'Active' : 'Closed' })}
+                  className="h-4 w-4 text-blue-900 border-gray-300 rounded focus:ring-amber-500"
+                />
+                <label htmlFor="job-status-toggle" className="text-sm font-medium text-gray-700">
+                  Job is Active (Status: <span className="font-bold">{jobForm.status}</span>)
+                </label>
+              </div>
+
+              <div className="flex items-center space-x-3 pt-2">
+                <input
+                  id="job-featured-toggle"
+                  type="checkbox"
+                  checked={jobForm.is_featured}
+                  onChange={(e) => setJobForm({ ...jobForm, is_featured: e.target.checked })}
+                  className="h-4 w-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500"
+                />
+                <label htmlFor="job-featured-toggle" className="text-sm font-medium text-gray-700">
+                  ⭐ Mark as Featured Job (appears at top with special highlighting)
+                </label>
+              </div>
+
               <button onClick={handleJobSubmit} className="w-full bg-blue-900 text-white py-2.5 rounded-md font-bold hover:bg-blue-800">
                 {editingJob ? 'Update Job' : 'Post Job'}
               </button>
@@ -536,6 +674,8 @@ export default function AdminCareers() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applicant</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -543,12 +683,11 @@ export default function AdminCareers() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {applications.map((app) => (
+                  {paginatedApplications.map((app) => (
                     <tr key={app.id}>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{app.applicant_name}</div>
-                        <div className="text-xs text-gray-500">{app.email}</div>
-                      </td>
+                      <td className="px-6 py-4"><div className="text-sm font-medium text-gray-900">{app.applicant_name}</div></td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{app.email}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{app.phone}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{app.job_postings?.title}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{app.applied_date}</td>
                       <td className="px-6 py-4">
@@ -579,6 +718,14 @@ export default function AdminCareers() {
                 </tbody>
               </table>
             </div>
+
+            {applicationsTotalPages > 1 && (
+              <Pagination
+                currentPage={applicationsCurrentPage}
+                totalPages={applicationsTotalPages}
+                onPageChange={setApplicationsCurrentPage}
+              />
+            )}
           </div>
         )}
 
@@ -631,11 +778,11 @@ export default function AdminCareers() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-6 py-3">Actions</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-48">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {departments.map((dept) => (
+                    {[...departments].sort((a, b) => a.display_order - b.display_order).map((dept, index, arr) => (
                       <tr key={dept.id}>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{dept.name}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{dept.description || '-'}</td>
@@ -650,9 +797,37 @@ export default function AdminCareers() {
                             {dept.is_active ? 'Active' : 'Inactive'}
                           </button>
                         </td>
-                        <td className="px-6 py-4 text-sm space-x-2">
-                          <button onClick={() => handleEditDept(dept)} className="text-blue-600 hover:text-blue-900">✏️</button>
-                          <button onClick={() => handleDeleteDept(dept.id)} className="text-red-600 hover:text-red-900">🗑️</button>
+                        <td className="px-6 py-4 text-sm space-x-1 flex items-center justify-center">
+                          <button
+                            onClick={() => handleMoveDept(dept.id, 'up')}
+                            disabled={index === 0}
+                            title="Move Up"
+                            className={`p-2 text-gray-500 hover:bg-gray-100 rounded ${index === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <i className="fas fa-arrow-up"></i>
+                          </button>
+                          <button
+                            onClick={() => handleMoveDept(dept.id, 'down')}
+                            disabled={index === arr.length - 1}
+                            title="Move Down"
+                            className={`p-2 text-gray-500 hover:bg-gray-100 rounded ${index === arr.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <i className="fas fa-arrow-down"></i>
+                          </button>
+                          <button 
+                            onClick={() => handleEditDept(dept)} 
+                            className="p-2 text-[#1e3a8a] hover:bg-blue-50 rounded"
+                            title="Edit Department"
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteDept(dept.id)} 
+                            className="p-2 text-red-600 hover:bg-red-50 rounded"
+                            title="Delete Department"
+                          >
+                            <i className="fas fa-trash-alt"></i>
+                          </button>
                         </td>
                       </tr>
                     ))}

@@ -1,129 +1,70 @@
+// app/components/GalleryContent.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-
-interface GalleryImage {
-  url: string;
-  caption: string;
-}
-
-interface GalleryProject {
-  id: number;
-  title: string;
-  category: string;
-  location: string;
-  date: string;
-  type: string;
-  description: string;
-  images: GalleryImage[];
-}
-
-const galleryData: GalleryProject[] = [
-  {
-    id: 1,
-    title: 'NH 44 - Widening Progress',
-    category: 'Project Sites',
-    location: 'Krishnagiri, TN',
-    date: 'October 2024',
-    type: 'Pavement & Earthwork',
-    description: 'A multi-image collection showcasing the different phases of highway widening, from earthwork to final PQC layer.',
-    images: [
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+1+%7C+PQC+Road+Casting', caption: 'Laying the Pavement Quality Concrete (PQC).' },
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+2+%7C+Hot+Mix+Plant', caption: 'High-capacity Hot Mix Plant operations.' },
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+3+%7C+Completed+Stretch', caption: 'The newly completed, smooth highway stretch.' },
-    ],
-  },
-  {
-    id: 2,
-    title: 'Flyover Foundation Piling',
-    category: 'Project Sites',
-    location: 'Madurai Central',
-    date: 'August 2024',
-    type: 'Structural Piling',
-    description: 'Visual documentation of deep piling and sub-structure erection for the urban flyover.',
-    images: [
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+1+%7C+Piling+Rig+Work', caption: 'The heavy piling rig in action at the pier location.' },
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+2+%7C+Pile+Cap+Formwork', caption: 'Preparation of the pile cap reinforcement and formwork.' },
-    ],
-  },
-  {
-    id: 7,
-    title: 'TTK Head Office',
-    category: 'Offices',
-    location: 'Madurai',
-    date: 'June 2023',
-    type: 'Interiors, Welcome',
-    description: 'A look inside our main operational hub, designed for efficiency and collaboration.',
-    images: [
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+1+%7C+Head+Office+Lobby', caption: 'The main reception area of the Head Office.' },
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+2+%7C+Conference+Room', caption: 'Our primary conference and client meeting room.' },
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+3+%7C+Open+Office+Space', caption: 'The spacious and modern open office environment.' },
-    ],
-  },
-  {
-    id: 8,
-    title: 'Team & Planning',
-    category: 'Staff',
-    location: 'Head Office',
-    date: 'September 2024',
-    type: 'Teamwork, Planning',
-    description: 'Highlighting the talented individuals and collaborative spirit that drives our success.',
-    images: [
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+1+%7C+Project+Review+Team', caption: 'Senior management and engineers during a weekly review.' },
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+2+%7C+Site+Supervisor+in+Action', caption: 'A site supervisor performing a quality check on site.' },
-    ],
-  },
-  {
-    id: 9,
-    title: 'Annual Safety Day',
-    category: 'Events',
-    location: 'Madurai Yard',
-    date: 'May 2024',
-    type: 'Company Culture, Training',
-    description: 'Photos from our annual event dedicated to enhancing safety awareness and recognizing outstanding team members.',
-    images: [
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+1+%7C+Safety+Day+Address', caption: 'CEO addressing the team on safety protocols.' },
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+2+%7C+Award+Distribution', caption: 'Distributing "Best Safety Practice" awards.' },
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+3+%7C+Team+Lunch', caption: 'Group photo during the event team lunch.' },
-    ],
-  },
-  {
-    id: 10,
-    title: 'Equipment & QC Lab',
-    category: 'Miscellaneous',
-    location: 'Various',
-    date: '2023-2024',
-    type: 'Equipment, Logistics, Quality',
-    description: 'A selection of important assets and behind-the-scenes quality control procedures.',
-    images: [
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+1+%7C+Heavy+Machinery', caption: 'Our new fleet of excavators and dump trucks.' },
-      { url: 'https://placehold.co/800x600/1e3a8a/fbbf24?text=Image+2+%7C+Quality+Control+Lab', caption: 'Engineers conducting material testing in the lab.' },
-    ],
-  },
-];
-
-const categories = ['all', 'Project Sites', 'Offices', 'Staff', 'Events', 'Miscellaneous'];
+import {
+  getAllAlbums,
+  getGalleryCategories,
+  getAlbumsByCategory,
+  type AlbumWithCategories,
+  type GalleryCategory,
+  type GalleryImage,
+} from '@/lib/gallery';
 
 export default function GalleryContent() {
   const [filter, setFilter] = useState('all');
-  const [selectedProject, setSelectedProject] = useState<GalleryProject | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithCategories | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [albums, setAlbums] = useState<AlbumWithCategories[]>([]);
+  const [categories, setCategories] = useState<GalleryCategory[]>([]);
+  const [filteredAlbums, setFilteredAlbums] = useState<AlbumWithCategories[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showHero, setShowHero] = useState(true);
 
-  const filteredProjects = filter === 'all' ? galleryData : galleryData.filter(p => p.category === filter);
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    filterAlbums();
+  }, [filter, albums]);
+
+  const loadData = async () => {
+    setLoading(true);
+    const [albumsData, categoriesData] = await Promise.all([
+      getAllAlbums(),
+      getGalleryCategories(),
+    ]);
+    setAlbums(albumsData);
+    setCategories(categoriesData);
+    setLoading(false);
+  };
+
+  const filterAlbums = () => {
+    if (filter === 'all') {
+      setFilteredAlbums(albums);
+    } else {
+      const categoryId = parseInt(filter);
+      const filtered = albums.filter((album) =>
+        album.categories?.some((cat) => cat.id === categoryId)
+      );
+      setFilteredAlbums(filtered);
+    }
+  };
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         closeModal();
-      } else if (selectedProject) {
+      } else if (selectedAlbum) {
         if (e.key === 'ArrowLeft') navigateCarousel(-1);
         if (e.key === 'ArrowRight') navigateCarousel(1);
       }
     };
 
-    if (selectedProject) {
+    if (selectedAlbum) {
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
     }
@@ -132,28 +73,55 @@ export default function GalleryContent() {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'auto';
     };
-  }, [selectedProject, currentImageIndex]);
+  }, [selectedAlbum, currentImageIndex]);
 
-  const openModal = (project: GalleryProject) => {
-    setSelectedProject(project);
+  const openModal = (album: AlbumWithCategories) => {
+    setSelectedAlbum(album);
     setCurrentImageIndex(0);
   };
 
   const closeModal = () => {
-    setSelectedProject(null);
+    setSelectedAlbum(null);
     setCurrentImageIndex(0);
   };
 
   const navigateCarousel = (direction: number) => {
-    if (!selectedProject) return;
+    if (!selectedAlbum || !selectedAlbum.images) return;
     let newIndex = currentImageIndex + direction;
-    if (newIndex < 0) newIndex = selectedProject.images.length - 1;
-    if (newIndex >= selectedProject.images.length) newIndex = 0;
+    if (newIndex < 0) newIndex = selectedAlbum.images.length - 1;
+    if (newIndex >= selectedAlbum.images.length) newIndex = 0;
     setCurrentImageIndex(newIndex);
   };
 
+  const navigateToImage = (index: number) => {
+    setCurrentImageIndex(index);
+  };
+
+  if (loading) {
+    return (
+      <section className="py-16 bg-gray-100">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading gallery...</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <>
+      {/* Hero Section */}
+      <section className="bg-blue-900 py-24 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-6xl font-extrabold text-amber-500 mb-4">
+            Our Complete Photo Gallery
+          </h1>
+          <p className="text-xl font-light max-w-2xl">
+            Showcasing the quality of our work, the professionalism of our team, and the culture of TTK Constructions.
+          </p>
+        </div>
+      </section>
+
       <section className="py-16 bg-gray-100">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-4xl font-extrabold text-center embossed-heading uppercase mb-12">
@@ -161,55 +129,75 @@ export default function GalleryContent() {
           </h2>
 
           <div className="mb-10 flex flex-wrap justify-center gap-2 sm:gap-4">
+            <button
+              onClick={() => setFilter('all')}
+              className={`font-semibold py-2 px-6 rounded-md transition mb-2 ${
+                filter === 'all'
+                  ? 'bg-amber-500 text-[#1e3a8a]'
+                  : 'bg-gray-300 text-gray-900 hover:bg-amber-500 hover:text-gray-900'
+              }`}
+            >
+              All Images
+            </button>
             {categories.map((cat) => (
               <button
-                key={cat}
-                onClick={() => setFilter(cat)}
+                key={cat.id}
+                onClick={() => setFilter(cat.id.toString())}
                 className={`font-semibold py-2 px-6 rounded-md transition mb-2 ${
-                  filter === cat
+                  filter === cat.id.toString()
                     ? 'bg-amber-500 text-[#1e3a8a]'
                     : 'bg-gray-300 text-gray-900 hover:bg-amber-500 hover:text-gray-900'
                 }`}
               >
-                {cat === 'all' ? 'All Images' : cat}
+                {cat.name}
               </button>
             ))}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProjects.map((project) => (
+            {filteredAlbums.map((album) => (
               <div
-                key={project.id}
-                onClick={() => openModal(project)}
+                key={album.id}
+                onClick={() => openModal(album)}
                 className="rounded-lg shadow-xl overflow-hidden bg-white cursor-pointer hover:shadow-2xl transition"
               >
                 <img
-                  src={project.images[0].url}
-                  alt={project.title}
+                  src={album.cover_image_url || 'https://placehold.co/800x600/1e3a8a/fbbf24?text=No+Image'}
+                  alt={album.name}
                   className="w-full h-48 object-cover hover:opacity-80 transition border-b-2 border-amber-500"
                 />
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
-                  <p className="text-amber-500 text-sm">
-                    {project.category} ({project.images.length} Photos)
+                  <h3 className="text-lg font-semibold text-gray-900">{album.name}</h3>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {album.categories?.map((cat) => (
+                      <span
+                        key={cat.id}
+                        className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded"
+                      >
+                        {cat.name}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-amber-500 text-sm mt-2">
+                    {album.photo_count} Photo{album.photo_count !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
             ))}
           </div>
 
-          {filteredProjects.length === 0 && (
+          {filteredAlbums.length === 0 && (
             <p className="text-center text-xl text-gray-500 mt-10">
-              No images found for this category. Please try a different filter.
+              No albums found for this category. Please try a different filter.
             </p>
           )}
         </div>
       </section>
 
       {/* Lightbox Modal */}
-      {selectedProject && (
+      {selectedAlbum && selectedAlbum.images && selectedAlbum.images.length > 0 && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
           onClick={closeModal}
         >
           <div
@@ -223,16 +211,19 @@ export default function GalleryContent() {
             </div>
 
             <div className="flex-grow flex flex-col md:flex-row overflow-hidden">
+              {/* Main Image Area (Left Side - 3/4 width) */}
               <div className="md:w-3/4 flex flex-col bg-gray-200 relative p-2 md:p-4">
                 <div className="flex-grow flex items-center justify-center relative overflow-hidden">
                   <img
-                    src={selectedProject.images[currentImageIndex].url}
-                    alt={selectedProject.title}
+                    src={selectedAlbum.images[currentImageIndex].url}
+                    alt={selectedAlbum.images[currentImageIndex].title}
                     className="max-h-full max-w-full object-contain rounded"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-sm p-2 text-center">
-                    {selectedProject.images[currentImageIndex].caption}
-                  </div>
+                  {selectedAlbum.images[currentImageIndex].caption && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-sm p-2 text-center">
+                      {selectedAlbum.images[currentImageIndex].caption}
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -249,48 +240,79 @@ export default function GalleryContent() {
                 </button>
 
                 <div className="mt-4 flex overflow-x-auto justify-center space-x-2 p-2 bg-white rounded-md shadow-inner">
-                  {selectedProject.images.map((img, idx) => (
+                  {selectedAlbum.images.map((img, idx) => (
                     <img
-                      key={idx}
-                      src={img.url}
+                      key={img.id}
+                      src={img.thumbnail_url || img.url}
                       alt={`Thumbnail ${idx + 1}`}
-                      onClick={() => setCurrentImageIndex(idx)}
+                      onClick={() => navigateToImage(idx)}
                       className={`w-20 h-16 object-cover cursor-pointer transition ${
-                        idx === currentImageIndex ? 'border-3 border-amber-500 opacity-100' : 'opacity-70'
+                        idx === currentImageIndex ? 'border-4 border-amber-500 opacity-100' : 'opacity-70'
                       }`}
                     />
                   ))}
                 </div>
               </div>
 
-              <div className="md:w-1/4 p-6 md:p-8 bg-white overflow-y-auto">
-                <h2 className="text-3xl font-bold text-blue-900 mb-2">{selectedProject.title}</h2>
-                <p className="text-amber-500 font-medium mb-4 border-b pb-2">
-                  Category: {selectedProject.category}
-                </p>
-
-                <div className="space-y-3 mb-6 text-gray-700 text-sm">
-                  <p>
-                    <strong>Location:</strong> {selectedProject.location}
-                  </p>
-                  <p>
-                    <strong>Date:</strong> {selectedProject.date}
-                  </p>
-                  <p>
-                    <strong>Keywords:</strong> {selectedProject.type}
+              {/* Sidebar with Image List (Right Side - 1/4 width) */}
+              <div className="md:w-1/4 flex flex-col bg-white overflow-hidden">
+                {/* Album Info Header */}
+                <div className="p-4 border-b bg-gray-50">
+                  <h2 className="text-2xl font-bold text-blue-900 mb-2">{selectedAlbum.name}</h2>
+                  <p className="text-sm text-gray-600">{selectedAlbum.description}</p>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {selectedAlbum.categories?.map((cat) => (
+                      <span
+                        key={cat.id}
+                        className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded"
+                      >
+                        {cat.name}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {selectedAlbum.images.length} image{selectedAlbum.images.length !== 1 ? 's' : ''}
                   </p>
                 </div>
 
-                <p className="text-gray-600 mb-6 text-sm">{selectedProject.description}</p>
+                {/* Vertical Image List */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  {selectedAlbum.images.map((img, idx) => (
+                    <div
+                      key={img.id}
+                      onClick={() => navigateToImage(idx)}
+                      className={`cursor-pointer rounded-lg overflow-hidden border-2 transition ${
+                        idx === currentImageIndex
+                          ? 'border-amber-500 shadow-lg'
+                          : 'border-gray-300 hover:border-amber-400'
+                      }`}
+                    >
+                      <img
+                        src={img.thumbnail_url || img.url}
+                        alt={img.title}
+                        className="w-full h-24 object-cover"
+                      />
+                      <div className="p-2 bg-white">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{img.title}</p>
+                        {img.caption && (
+                          <p className="text-xs text-gray-600 truncate">{img.caption}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-                <Link
-                  href={selectedProject.category === 'Project Sites' ? '/projects' : '/contact'}
-                  className="inline-block bg-blue-900 text-white font-semibold py-2 px-4 rounded hover:bg-blue-800"
-                >
-                  {selectedProject.category === 'Project Sites'
-                    ? 'View Related Projects →'
-                    : 'Contact Us for Details →'}
-                </Link>
+                {/* Action Button */}
+                <div className="p-4 border-t bg-gray-50">
+                  <Link
+                    href={selectedAlbum.categories?.some(cat => cat.name.includes('Project')) ? '/projects' : '/contact'}
+                    className="block w-full text-center bg-blue-900 text-white font-semibold py-2 px-4 rounded hover:bg-blue-800 transition"
+                  >
+                    {selectedAlbum.categories?.some(cat => cat.name.includes('Project'))
+                      ? 'View Related Projects →'
+                      : 'Contact Us →'}
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
