@@ -345,7 +345,7 @@ export default function ProjectModal({ projectId, onClose }: ProjectModalProps) 
     </div>
     
     <div className="mt-4 text-center">
-      
+      <a
         href="/gallery"
         className="inline-flex items-center text-blue-700 hover:text-blue-800 font-semibold"
       >
