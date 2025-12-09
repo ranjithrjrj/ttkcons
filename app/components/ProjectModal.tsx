@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase, Project, GalleryImage } from '@/lib/supabase';
+import { getAlbumByProjectId, type AlbumWithCategories } from '@/lib/gallery';
 
 interface ProjectModalProps {
   projectId: number;
@@ -15,18 +16,49 @@ export default function ProjectModal({ projectId, onClose }: ProjectModalProps) 
   const [project, setProject] = useState<Project | null>(null);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [galleryAlbum, setGalleryAlbum] = useState<AlbumWithCategories | null>(null);
+	const [selectedGalleryImage, setSelectedGalleryImage] = useState<number>(0);
 
   useEffect(() => {
-    fetchProjectDetails();
-    fetchProjectImages();
-  }, [projectId]);
+  if (isOpen && projectId) {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch project details
+        const { data, error } = await supabase
+          .from('projects')
+          .select(`
+            *,
+            category:category_id (
+              id,
+              name,
+              color_class
+            ),
+            clients:clients_name (
+              id,
+              name
+            )
+          `)
+          .eq('id', projectId)
+          .single();
 
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
+        if (error) throw error;
+        setProject(data);
+        
+        // Fetch gallery album for this project
+        const album = await getAlbumByProjectId(projectId);
+        setGalleryAlbum(album);
+        
+      } catch (error) {
+        console.error('Error fetching project:', error);
+      } finally {
+        setLoading(false);
       }
     };
+
+    fetchData();
+  }
+}, [isOpen, projectId]);
 
     document.addEventListener('keydown', handleEscape);
     document.body.classList.add('overflow-hidden');
@@ -250,6 +282,74 @@ export default function ProjectModal({ projectId, onClose }: ProjectModalProps) 
               </ul>
             </>
           )}
+		  {/* Project Gallery Section */}
+{galleryAlbum && galleryAlbum.images && galleryAlbum.images.length > 0 && (
+  <div className="border-t pt-6 mt-6">
+    <h3 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+      <i className="fas fa-images mr-3 text-amber-500"></i>
+      Project Gallery ({galleryAlbum.images.length} Photos)
+    </h3>
+    
+    {/* Main Image Display */}
+    <div className="mb-4">
+      <img
+        src={galleryAlbum.images[selectedGalleryImage]?.url}
+        alt={galleryAlbum.images[selectedGalleryImage]?.title}
+        className="w-full h-96 object-cover rounded-lg shadow-lg"
+      />
+      {galleryAlbum.images[selectedGalleryImage]?.caption && (
+        <p className="text-sm text-gray-600 mt-2 text-center italic">
+          {galleryAlbum.images[selectedGalleryImage].caption}
+        </p>
+      )}
+    </div>
+    
+    {/* Thumbnail Grid */}
+    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+      {galleryAlbum.images.map((image, index) => (
+        <button
+          key={image.id}
+          onClick={() => setSelectedGalleryImage(index)}
+          className={`relative aspect-square rounded-lg overflow-hidden transition-all ${
+            selectedGalleryImage === index
+              ? 'ring-4 ring-amber-500 scale-105'
+              : 'hover:ring-2 hover:ring-blue-300'
+          }`}
+        >
+          <img
+            src={image.thumbnail_url || image.url}
+            alt={image.title}
+            className="w-full h-full object-cover"
+          />
+          {image.is_featured && (
+            <div className="absolute top-0 right-0 bg-amber-500 text-white p-1">
+              <i className="fas fa-star text-xs"></i>
+            </div>
+          )}
+        </button>
+      ))}
+    </div>
+    
+    <div className="mt-4 text-center">
+      
+        href="/gallery"
+        className="inline-flex items-center text-blue-700 hover:text-blue-800 font-semibold"
+      >
+        View Full Gallery →
+      </a>
+    </div>
+  </div>
+)}
+
+{/* No Gallery Message */}
+{galleryAlbum && (!galleryAlbum.images || galleryAlbum.images.length === 0) && (
+  <div className="border-t pt-6 mt-6">
+    <div className="bg-gray-50 rounded-lg p-6 text-center">
+      <i className="fas fa-images text-4xl text-gray-300 mb-2"></i>
+      <p className="text-gray-600">No gallery images available for this project yet.</p>
+    </div>
+  </div>
+)}
         </div>
       </div>
     </div>

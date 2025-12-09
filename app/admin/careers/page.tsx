@@ -57,6 +57,7 @@ export default function AdminCareers() {
   const [editingJob, setEditingJob] = useState<JobPosting | null>(null);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [selectedResume, setSelectedResume] = useState<{ url: string; name: string } | null>(null);
+  const [showDeptForm, setShowDeptForm] = useState(false);
   
   const [jobsCurrentPage, setJobsCurrentPage] = useState(1);
   const [applicationsCurrentPage, setApplicationsCurrentPage] = useState(1);
@@ -307,6 +308,7 @@ export default function AdminCareers() {
       name: dept.name,
       description: dept.description || ''
     });
+    setShowDeptForm(true);
   };
 
   const handleDeleteDept = (id: number) => {
@@ -410,12 +412,12 @@ export default function AdminCareers() {
 
   const resetDeptForm = () => {
     setEditingDept(null);
+    setShowDeptForm(false);
     setDeptForm({ name: '', description: '' });
   };
 
   const activeDepartments = departments.filter(d => d.is_active);
 
-  // Pagination calculations
   const jobsTotalPages = Math.ceil(jobs.length / ITEMS_PER_PAGE);
   const paginatedJobs = jobs.slice(
     (jobsCurrentPage - 1) * ITEMS_PER_PAGE,
@@ -440,22 +442,43 @@ export default function AdminCareers() {
 
         <div className="mb-6 border-b border-gray-200">
           <nav className="flex space-x-8">
-            {(['manage-jobs', 'add-job', 'applications', 'manage-departments'] as Section[]).map((section) => (
+            <button
+              onClick={() => setActiveSection('manage-jobs')}
+              className={`pb-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
+                activeSection === 'manage-jobs'
+                  ? 'border-amber-500 text-blue-900'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Manage Jobs
+            </button>
+            {activeSection === 'add-job' && (
               <button
-                key={section}
-                onClick={() => setActiveSection(section)}
-                className={`pb-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
-                  activeSection === section
-                    ? 'border-amber-500 text-blue-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className="pb-4 px-1 border-b-2 border-amber-500 text-blue-900 font-semibold text-sm"
               >
-                {section === 'manage-jobs' && 'Manage Jobs'}
-                {section === 'add-job' && (editingJob ? 'Edit Job' : 'Add New Job')}
-                {section === 'applications' && 'Applications'}
-                {section === 'manage-departments' && 'Departments'}
+                {editingJob ? 'Edit Job' : 'Add New Job'}
               </button>
-            ))}
+            )}
+            <button
+              onClick={() => setActiveSection('applications')}
+              className={`pb-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
+                activeSection === 'applications'
+                  ? 'border-amber-500 text-blue-900'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Applications
+            </button>
+            <button
+              onClick={() => setActiveSection('manage-departments')}
+              className={`pb-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
+                activeSection === 'manage-departments'
+                  ? 'border-amber-500 text-blue-900'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Departments
+            </button>
           </nav>
         </div>
 
@@ -464,10 +487,13 @@ export default function AdminCareers() {
             <div className="flex justify-between items-center mb-6 border-b pb-4">
               <h3 className="text-2xl font-semibold">Job Postings ({jobs.length})</h3>
               <button
-                onClick={() => { resetJobForm(); setActiveSection('add-job'); }}
+                onClick={() => { 
+                  resetJobForm(); 
+                  setActiveSection('add-job'); 
+                }}
                 className="bg-amber-500 text-blue-900 px-4 py-2 rounded-lg font-bold hover:bg-amber-600"
               >
-                + Add Job
+                <i className="fas fa-plus-circle mr-2"></i>  Add Job
               </button>
             </div>
 
@@ -546,7 +572,15 @@ export default function AdminCareers() {
           <div className="bg-white p-8 rounded-xl shadow-lg border-l-4 border-amber-500">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
               <h3 className="text-2xl font-semibold">{editingJob ? 'Edit Job' : 'Add New Job'}</h3>
-              <button onClick={() => { resetJobForm(); setActiveSection('manage-jobs'); }} className="text-gray-500 hover:text-red-600">✕</button>
+              <button 
+                onClick={() => { 
+                  resetJobForm(); 
+                  setActiveSection('manage-jobs'); 
+                }} 
+                className="text-gray-500 hover:text-red-600"
+              >
+                ✕
+              </button>
             </div>
 
             <div className="space-y-4">
@@ -728,47 +762,70 @@ export default function AdminCareers() {
             )}
           </div>
         )}
-
-        {activeSection === 'manage-departments' && (
+		
+		
+	{activeSection === 'manage-departments' && (
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-amber-500">
-              <h3 className="text-xl font-semibold mb-4">{editingDept ? 'Edit' : 'Add'} Department</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Name *</label>
-                  <input
-                    type="text"
-                    value={deptForm.name}
-                    onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Description</label>
-                  <textarea
-                    value={deptForm.description}
-                    onChange={(e) => setDeptForm({ ...deptForm, description: e.target.value })}
-                    rows={2}
-                    className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={handleDeptSubmit} className="bg-blue-900 text-white px-6 py-2 rounded-md font-bold hover:bg-blue-800">
-                    {editingDept ? 'Update' : 'Add'} Department
+            {showDeptForm && (
+              <div className="bg-white p-6 rounded-xl shadow-lg border-l-4 border-amber-500">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold">{editingDept ? 'Edit' : 'Add'} Department</h3>
+                  <button
+                    onClick={resetDeptForm}
+                    className="text-gray-500 hover:text-red-600"
+                  >
+                    <i className="fas fa-times text-xl"></i>
                   </button>
-                  {editingDept && (
+                </div>
+              
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Name *</label>
+                    <input
+                      type="text"
+                      value={deptForm.name}
+                      onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
+                      required
+                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea
+                      value={deptForm.description}
+                      onChange={(e) => setDeptForm({ ...deptForm, description: e.target.value })}
+                      rows={2}
+                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleDeptSubmit} className="bg-blue-900 text-white px-6 py-2 rounded-md font-bold hover:bg-blue-800">
+                      {editingDept ? 'Update' : 'Add'} Department
+                    </button>
                     <button onClick={resetDeptForm} className="bg-gray-300 text-gray-700 px-6 py-2 rounded-md font-bold">
                       Cancel
                     </button>
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="bg-white p-8 rounded-xl shadow-lg">
-              <h3 className="text-2xl font-semibold mb-6 border-b pb-4">All Departments ({departments.length})</h3>
+              <div className="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 className="text-2xl font-semibold">All Departments ({departments.length})</h3>
+                {!showDeptForm && (
+                  <button
+                    onClick={() => {
+                      setEditingDept(null);
+                      setDeptForm({ name: '', description: '' });
+                      setShowDeptForm(true);
+                    }}
+                    className="bg-amber-500 text-blue-900 px-4 py-2 rounded-lg font-bold hover:bg-amber-600"
+                  >
+                    <i className="fas fa-plus-circle mr-2"></i> Add Department
+                  </button>
+                )}
+              </div>
 
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">

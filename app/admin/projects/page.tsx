@@ -19,8 +19,8 @@ export default function AdminProjects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [featuredCount, setFeaturedCount] = useState(0);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
     title: '',
     category_id: '',
@@ -35,12 +35,10 @@ export default function AdminProjects() {
     show_on_website: true
   });
 
-  // Category form state
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
     description: '',
-    color_class: '#3b82f6',
-    display_order: 0
+    color_class: '#3b82f6'
   });
 
   useEffect(() => {
@@ -71,7 +69,6 @@ export default function AdminProjects() {
       if (error) throw error;
       setProjects(data || []);
       
-      // Count featured projects
       const featured = (data || []).filter(p => p.is_featured).length;
       setFeaturedCount(featured);
     } catch (error) {
@@ -118,7 +115,6 @@ export default function AdminProjects() {
     const value = target.type === 'checkbox' ? (target as HTMLInputElement).checked : target.value;
     const name = target.name;
     
-    // Check featured limit
     if (name === 'is_featured' && value === true && !editingProject) {
       if (featuredCount >= 3) {
         toast.error('Maximum 3 featured projects allowed!');
@@ -143,13 +139,11 @@ export default function AdminProjects() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check featured limit again before submit
     if (formData.is_featured && !editingProject?.is_featured && featuredCount >= 3) {
       toast.error('Maximum 3 featured projects allowed!');
       return;
     }
 
-    // Parse scope of work (one line per item)
     const scopeArray = formData.scope_of_work
       .split('\n')
       .map(item => item.trim())
@@ -188,7 +182,6 @@ export default function AdminProjects() {
         toast.success('Project created successfully!');
       }
 
-      // Reset form and refresh
       setFormData({
         title: '',
         category_id: '',
@@ -263,12 +256,16 @@ export default function AdminProjects() {
   const handleCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const displayOrder = editingCategory 
+      ? editingCategory.display_order
+      : (categories.length > 0 ? Math.max(...categories.map(c => c.display_order)) + 1 : 0);
+
     const categoryData = {
       name: categoryFormData.name,
       description: categoryFormData.description || null,
       type: 'project',
       color_class: categoryFormData.color_class,
-      display_order: parseInt(categoryFormData.display_order.toString()),
+      display_order: displayOrder,
       is_active: true,
       updated_at: new Date().toISOString()
     };
@@ -294,10 +291,10 @@ export default function AdminProjects() {
       setCategoryFormData({
         name: '',
         description: '',
-        color_class: '#3b82f6',
-        display_order: 0
+        color_class: '#3b82f6'
       });
       setEditingCategory(null);
+      setShowCategoryForm(false);
       fetchCategories();
     } catch (error: any) {
       console.error('Error saving category:', error);
@@ -310,13 +307,12 @@ export default function AdminProjects() {
     setCategoryFormData({
       name: category.name,
       description: category.description || '',
-      color_class: category.color_class,
-      display_order: category.display_order
+      color_class: category.color_class
     });
+    setShowCategoryForm(true);
   };
 
   const handleDeleteCategory = async (id: number) => {
-    // Check if category is being used
     const projectsUsingCategory = projects.filter(p => p.category_id === id);
     if (projectsUsingCategory.length > 0) {
       toast.error(`Cannot delete category. ${projectsUsingCategory.length} project(s) are using it.`);
@@ -361,7 +357,6 @@ export default function AdminProjects() {
     if (targetIndex < 0 || targetIndex >= categories.length) return;
 
     try {
-      // Swap display_order values
       const currentCategory = categories[currentIndex];
       const targetCategory = categories[targetIndex];
 
@@ -383,12 +378,6 @@ export default function AdminProjects() {
     }
   };
 
-  const reportingStats = {
-    onSchedule: projects.filter(p => p.status === 'completed').length,
-    atRisk: projects.filter(p => p.status === 'planned').length,
-    completedThisYear: projects.filter(p => p.status === 'completed').length
-  };
-
   return (
     <div className="min-h-screen bg-gray-100">
       <Toaster position="top-right" />
@@ -406,7 +395,6 @@ export default function AdminProjects() {
           </div>
         </header>
 
-        {/* Tab Navigation */}
         <div className="mb-6 border-b border-gray-200">
           <nav className="flex space-x-8">
             <button
@@ -417,34 +405,15 @@ export default function AdminProjects() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Edit Project Details
+              Manage Projects
             </button>
-            <button
-              onClick={() => {
-                setEditingProject(null);
-                setFormData({
-                  title: '',
-                  category_id: '',
-                  status: 'in-progress',
-                  contract_value: '',
-                  clients_name: '',
-                  detailed_description: '',
-                  scope_of_work: '',
-                  summary: '',
-                  location: '',
-                  is_featured: false,
-                  show_on_website: true
-                });
-                setActiveSection('add-project');
-              }}
-              className={`pb-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
-                activeSection === 'add-project'
-                  ? 'border-[#fbbf24] text-[#1e3a8a]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {editingProject ? 'Edit Project' : 'Add New Project'}
-            </button>
+            {activeSection === 'add-project' && (
+              <button
+                className="pb-4 px-1 border-b-2 border-[#fbbf24] text-[#1e3a8a] font-semibold text-sm"
+              >
+                {editingProject ? 'Edit Project' : 'Add New Project'}
+              </button>
+            )}
             <button
               onClick={() => setActiveSection('manage-categories')}
               className={`pb-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
@@ -458,7 +427,6 @@ export default function AdminProjects() {
           </nav>
         </div>
 
-        {/* Manage Projects Section */}
         {activeSection === 'manage-projects' && (
           <div className="bg-white p-8 rounded-xl shadow-lg">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
@@ -466,7 +434,23 @@ export default function AdminProjects() {
                 Active & Completed Projects ({projects.length} Total)
               </h3>
               <button
-                onClick={() => setActiveSection('add-project')}
+                onClick={() => {
+                  setEditingProject(null);
+                  setFormData({
+                    title: '',
+                    category_id: '',
+                    status: 'in-progress',
+                    contract_value: '',
+                    clients_name: '',
+                    detailed_description: '',
+                    scope_of_work: '',
+                    summary: '',
+                    location: '',
+                    is_featured: false,
+                    show_on_website: true
+                  });
+                  setActiveSection('add-project');
+                }}
                 className="bg-[#fbbf24] text-[#1e3a8a] px-4 py-2 rounded-lg font-bold hover:bg-[#f59e0b] transition duration-300 shadow-md"
               >
                 <i className="fas fa-plus-circle mr-2"></i> Add New Project
@@ -564,7 +548,6 @@ export default function AdminProjects() {
           </div>
         )}
 
-        {/* Add/Edit Project Section */}
         {activeSection === 'add-project' && (
           <div className="bg-white p-8 rounded-xl shadow-lg border-l-4 border-[#fbbf24]">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
@@ -741,7 +724,6 @@ export default function AdminProjects() {
                 ></textarea>
               </div>
 
-              {/* Featured Toggle with Counter */}
               <div className="flex items-center space-x-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
                 <input
                   type="checkbox"
@@ -768,7 +750,6 @@ export default function AdminProjects() {
                 </div>
               </div>
 
-              {/* Show on Website Toggle */}
               <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <input
                   type="checkbox"
@@ -799,122 +780,137 @@ export default function AdminProjects() {
           </div>
         )}
 
-        {/* Manage Categories Section */}
         {activeSection === 'manage-categories' && (
           <div className="space-y-6">
-            {/* Add/Edit Category Form */}
-            <div className="bg-white p-8 rounded-xl shadow-lg border-l-4 border-[#fbbf24]">
-              <h3 className="text-2xl font-semibold text-gray-800 mb-6 border-b pb-4">
-                {editingCategory ? 'Edit Category' : 'Add New Category'}
-              </h3>
+            {showCategoryForm && (
+              <div className="bg-white p-8 rounded-xl shadow-lg border-l-4 border-[#fbbf24]">
+                <div className="flex justify-between items-center mb-6 border-b pb-4">
+                  <h3 className="text-2xl font-semibold text-gray-800">
+                    {editingCategory ? 'Edit Category' : 'Add New Category'}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowCategoryForm(false);
+                      setEditingCategory(null);
+                      setCategoryFormData({
+                        name: '',
+                        description: '',
+                        color_class: '#3b82f6'
+                      });
+                    }}
+                    className="text-gray-500 hover:text-red-600 transition duration-300"
+                  >
+                    <i className="fas fa-times text-xl"></i>
+                  </button>
+                </div>
 
-              <form onSubmit={handleCategorySubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="cat_name" className="block text-sm font-medium text-gray-700">
-                      Category Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="cat_name"
-                      name="name"
-                      value={categoryFormData.name}
-                      onChange={handleCategoryInputChange}
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a]"
-                      placeholder="e.g., Highways & Roads"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="cat_color" className="block text-sm font-medium text-gray-700">
-                      Category Color *
-                    </label>
-                    <div className="mt-1 flex items-center space-x-2">
-                      <input
-                        type="color"
-                        id="cat_color"
-                        name="color_class"
-                        value={categoryFormData.color_class}
-                        onChange={handleCategoryInputChange}
-                        required
-                        className="h-10 w-20 border border-gray-300 rounded cursor-pointer"
-                      />
+                <form onSubmit={handleCategorySubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="cat_name" className="block text-sm font-medium text-gray-700">
+                        Category Name *
+                      </label>
                       <input
                         type="text"
-                        value={categoryFormData.color_class}
-                        onChange={(e) => setCategoryFormData({...categoryFormData, color_class: e.target.value})}
-                        className="flex-1 border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a]"
-                        placeholder="#3b82f6"
+                        id="cat_name"
+                        name="name"
+                        value={categoryFormData.name}
+                        onChange={handleCategoryInputChange}
+                        required
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a]"
+                        placeholder="e.g., Highways & Roads"
                       />
+                    </div>
+
+                    <div>
+                      <label htmlFor="cat_color" className="block text-sm font-medium text-gray-700">
+                        Category Color *
+                      </label>
+                      <div className="mt-1 flex items-center space-x-2">
+                        <input
+                          type="color"
+                          id="cat_color"
+                          name="color_class"
+                          value={categoryFormData.color_class}
+                          onChange={handleCategoryInputChange}
+                          required
+                          className="h-10 w-20 border border-gray-300 rounded cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={categoryFormData.color_class}
+                          onChange={(e) => setCategoryFormData({...categoryFormData, color_class: e.target.value})}
+                          className="flex-1 border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a]"
+                          placeholder="#3b82f6"
+                        />
+                      </div>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="cat_order" className="block text-sm font-medium text-gray-700">
-                      Display Order *
+                    <label htmlFor="cat_description" className="block text-sm font-medium text-gray-700">
+                      Description
                     </label>
-                    <input
-                      type="number"
-                      id="cat_order"
-                      name="display_order"
-                      value={categoryFormData.display_order}
+                    <textarea
+                      id="cat_description"
+                      name="description"
+                      value={categoryFormData.description}
                       onChange={handleCategoryInputChange}
-                      required
-                      min="0"
+                      rows={2}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a]"
-                    />
+                      placeholder="Brief description of this category"
+                    ></textarea>
                   </div>
-                </div>
 
-                <div>
-                  <label htmlFor="cat_description" className="block text-sm font-medium text-gray-700">
-                    Description
-                  </label>
-                  <textarea
-                    id="cat_description"
-                    name="description"
-                    value={categoryFormData.description}
-                    onChange={handleCategoryInputChange}
-                    rows={2}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a]"
-                    placeholder="Brief description of this category"
-                  ></textarea>
-                </div>
-
-                <div className="flex space-x-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-[#1e3a8a] text-white py-2.5 rounded-md font-bold shadow-md hover:bg-[#2558a7] transition duration-300"
-                  >
-                    {editingCategory ? 'Update Category' : 'Add Category'}
-                  </button>
-                  {editingCategory && (
+                  <div className="flex space-x-4">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-[#1e3a8a] text-white py-2.5 rounded-md font-bold shadow-md hover:bg-[#2558a7] transition duration-300"
+                    >
+                      {editingCategory ? 'Update Category' : 'Add Category'}
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
                         setEditingCategory(null);
+                        setShowCategoryForm(false);
                         setCategoryFormData({
                           name: '',
                           description: '',
-                          color_class: '#3b82f6',
-                          display_order: 0
+                          color_class: '#3b82f6'
                         });
                       }}
                       className="px-6 bg-gray-300 text-gray-700 py-2.5 rounded-md font-bold hover:bg-gray-400 transition duration-300"
                     >
                       Cancel
                     </button>
-                  )}
-                </div>
-              </form>
-            </div>
+                  </div>
+                </form>
+              </div>
+            )}
 
-            {/* Existing Categories List */}
             <div className="bg-white p-8 rounded-xl shadow-lg">
-              <h3 className="text-2xl font-semibold text-gray-800 mb-6 border-b pb-4">
-                Existing Categories ({categories.length})
-              </h3>
+              <div className="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 className="text-2xl font-semibold text-gray-800">
+                  Existing Categories ({categories.length})
+                </h3>
+                {!showCategoryForm && (
+                  <button
+                    onClick={() => {
+                      setEditingCategory(null);
+                      setCategoryFormData({
+                        name: '',
+                        description: '',
+                        color_class: '#3b82f6'
+                      });
+                      setShowCategoryForm(true);
+                    }}
+                    className="bg-[#fbbf24] text-[#1e3a8a] px-4 py-2 rounded-lg font-bold hover:bg-[#f59e0b] transition duration-300 shadow-md"
+                  >
+                    <i className="fas fa-plus-circle mr-2"></i> Add New Category
+                  </button>
+                )}
+              </div>
 
               <div className="space-y-3">
                 {categories.map((category, index) => (
@@ -939,7 +935,6 @@ export default function AdminProjects() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      {/* Move Up/Down buttons */}
                       <button
                         onClick={() => moveCategoryOrder(category.id, 'up')}
                         disabled={index === 0}
@@ -965,7 +960,6 @@ export default function AdminProjects() {
                         <i className="fas fa-arrow-down"></i>
                       </button>
 
-                      {/* Edit/Delete buttons */}
                       <button
                         onClick={() => handleEditCategory(category)}
                         className="p-2 text-[#1e3a8a] hover:bg-blue-50 rounded"

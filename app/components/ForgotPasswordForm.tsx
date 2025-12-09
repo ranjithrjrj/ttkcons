@@ -133,7 +133,7 @@ export default function ForgotPasswordForm() {
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
                   className="w-12 h-14 text-center text-2xl font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200"
                 />
-                D:
+                
                 {/* Add the separator after the third input only */}
                 {index === 2 && <span className="text-2xl text-gray-400 mx-1">—</span>}
               </>
