@@ -83,34 +83,6 @@ export default function ProjectModal({ projectId, onClose }: ProjectModalProps) 
     };
   }, [onClose]); // Dependency: onClose
 
-  const fetchProjectDetails = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          category:category_id (
-            id,
-            name,
-            color_class
-          ),
-          clients:clients_name (
-            id,
-            name
-          )
-        `)
-        .eq('id', projectId)
-        .single();
-
-      if (error) throw error;
-      setProject(data);
-    } catch (error) {
-      console.error('Error fetching project:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchProjectImages = async () => {
     try {
       // First, get albums linked to this project via project_id
