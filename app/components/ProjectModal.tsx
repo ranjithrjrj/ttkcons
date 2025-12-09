@@ -1,7 +1,7 @@
 // components/ProjectModal.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Import useCallback for stability
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase, Project, GalleryImage } from '@/lib/supabase';
 import { getAlbumByProjectId, type AlbumWithCategories } from '@/lib/gallery';
@@ -19,47 +19,61 @@ export default function ProjectModal({ projectId, onClose }: ProjectModalProps) 
   const [galleryAlbum, setGalleryAlbum] = useState<AlbumWithCategories | null>(null);
 	const [selectedGalleryImage, setSelectedGalleryImage] = useState<number>(0);
 
-  useEffect(() => {
-  if (isOpen && projectId) {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch project details
-        const { data, error } = await supabase
-          .from('projects')
-          .select(`
-            *,
-            category:category_id (
-              id,
-              name,
-              color_class
-            ),
-            clients:clients_name (
-              id,
-              name
-            )
-          `)
-          .eq('id', projectId)
-          .single();
+  // --- Utility functions for fetching data (Memoized) ---
+  const fetchProjectDetails = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch project details
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          category:category_id (
+            id,
+            name,
+            color_class
+          ),
+          clients:clients_name (
+            id,
+            name
+          )
+        `)
+        .eq('id', projectId)
+        .single();
 
-        if (error) throw error;
-        setProject(data);
-        
-        // Fetch gallery album for this project
-        const album = await getAlbumByProjectId(projectId);
-        setGalleryAlbum(album);
-        
-      } catch (error) {
-        console.error('Error fetching project:', error);
-      } finally {
-        setLoading(false);
+      if (error) throw error;
+      setProject(data);
+      
+      // Fetch gallery album for this project
+      const album = await getAlbumByProjectId(projectId);
+      setGalleryAlbum(album);
+      
+    } catch (error) {
+      console.error('Error fetching project:', error);
+      setProject(null); // Ensure state is cleared on error
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]); // Dependency: projectId
+
+  // --- Effect for Data Fetching ---
+  // Replaces the broken useEffect on lines 30-64
+  useEffect(() => {
+    if (projectId) {
+      // The function that was previously inline
+      fetchProjectDetails();
+    }
+  }, [projectId, fetchProjectDetails]); // Dependencies: projectId and memoized fetcher
+
+  // --- Effect for Side Effects (Escape key and body class) ---
+  // Replaces the broken useEffect on lines 66-70 and adds necessary logic
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
       }
     };
-
-    fetchData();
-  }
-}, [isOpen, projectId]);
-
+    
     document.addEventListener('keydown', handleEscape);
     document.body.classList.add('overflow-hidden');
 
@@ -67,7 +81,7 @@ export default function ProjectModal({ projectId, onClose }: ProjectModalProps) 
       document.removeEventListener('keydown', handleEscape);
       document.body.classList.remove('overflow-hidden');
     };
-  }, [onClose]);
+  }, [onClose]); // Dependency: onClose
 
   const fetchProjectDetails = async () => {
     try {
