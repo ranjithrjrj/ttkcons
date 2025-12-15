@@ -167,8 +167,6 @@ export interface ContactSubmission {
   created_at: string;
 }
 
-export type { ContactSubmission };
-
 export type ApplicationStatus = 
   | 'Pending Review'
   | 'Under Review'
@@ -214,3 +212,5 @@ export const deleteResume = async (path: string) => {
 
   if (error) throw error;
 };
+
+export type { ContactSubmission };
