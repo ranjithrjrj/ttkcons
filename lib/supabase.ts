@@ -212,5 +212,3 @@ export const deleteResume = async (path: string) => {
 
   if (error) throw error;
 };
-
-export type { ContactSubmission };
