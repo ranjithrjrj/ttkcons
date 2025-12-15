@@ -1,5 +1,7 @@
+// app/contact/page.tsx
 import type { Metadata } from 'next';
 import { Phone, Mail, MapPin } from 'lucide-react';
+import ContactForm from './ContactForm';
 
 export const metadata: Metadata = {
   title: 'Contact Us | TTK Constructions',
@@ -38,7 +40,7 @@ export default function ContactPage() {
                       Head Office: <span className="font-semibold">0452 - 2537733</span>
                     </p>
                     <p className="text-gray-600">
-                      Mobile (24/7 Support):{' '}
+                      Mobile:{' '}
                       <span className="font-semibold text-amber-600">+91 99887 76655</span>
                     </p>
                     <p className="text-gray-600">Fax: 0452 - 2537734</p>
@@ -56,7 +58,7 @@ export default function ContactPage() {
                       <span className="font-semibold text-blue-700">info@ttkcons.in</span>
                     </p>
                     <p className="text-gray-600">
-                      Tendering & Bids:{' '}
+                      Tender & Bids:{' '}
                       <span className="font-semibold text-blue-700">tenders@ttkcons.in</span>
                     </p>
                     <p className="text-gray-600">
@@ -73,85 +75,60 @@ export default function ContactPage() {
                   <div>
                     <h3 className="text-xl font-bold text-gray-900 mb-1">Head Office</h3>
                     <p className="text-gray-600 font-medium">TTK Towers, No: 321, 2nd Floor,</p>
-                    <p className="text-gray-600 font-medium">80 Feet Road, LIG Colony, Anna Nagar,</p>
+                    <p className="text-gray-600 font-medium">80 Feet Road, LIG Colony, </p>
                     <p className="text-gray-600 font-medium text-amber-600">
-                      Madurai – 625 020, Tamil Nadu, India
+                      Anna Nagar, Madurai – 625 020, Tamil Nadu.
                     </p>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Contact Form */}
-            <div className="lg:col-span-2 bg-white p-8 rounded-lg shadow-2xl">
-              <h3 className="text-2xl font-bold text-blue-900 mb-6 border-b pb-2">
-                Send Us a Message
-              </h3>
-
-              <form action="#" method="POST" className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      id="name"
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-amber-500 focus:border-amber-500"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-amber-500 focus:border-amber-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700">
-                    Subject
-                  </label>
-                  <input
-                    type="text"
-                    name="subject"
-                    id="subject"
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-amber-500 focus:border-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700">
-                    Your Message
-                  </label>
-                  <textarea
-                    name="message"
-                    id="message"
-                    rows={5}
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-3 focus:ring-amber-500 focus:border-amber-500"
-                  ></textarea>
-                </div>
-
-                <div className="text-right">
-                  <button
-                    type="submit"
-                    className="bg-amber-500 text-[#1e3a8a] font-bold px-8 py-3 rounded shadow-md hover:bg-amber-600 transition-colors"
+              {/* Social Media Links */}
+              <div className="p-6 bg-white rounded-lg shadow-lg border-l-4 border-amber-500">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Connect With Us</h3>
+                <div className="flex gap-4">
+                  <a
+                    href="https://facebook.com/ttkcons"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-colors"
+                    aria-label="Facebook"
                   >
-                    Send Message
-                  </button>
+                    <i className="fab fa-facebook-f text-white text-xl"></i>
+                  </a>
+                  <a
+                    href="https://instagram.com/ttkcons"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 hover:from-purple-700 hover:via-pink-700 hover:to-orange-600 flex items-center justify-center transition-all"
+                    aria-label="Instagram"
+                  >
+                    <i className="fab fa-instagram text-white text-xl"></i>
+                  </a>
+                  <a
+                    href="https://linkedin.com/company/ttkcons"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 rounded-full bg-blue-700 hover:bg-blue-800 flex items-center justify-center transition-colors"
+                    aria-label="LinkedIn"
+                  >
+                    <i className="fab fa-linkedin-in text-white text-xl"></i>
+                  </a>
+                  <a
+                    href="https://x.com/ttkcons"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors"
+                    aria-label="X (Twitter)"
+                  >
+                    <i className="fab fa-x-twitter text-white text-xl"></i>
+                  </a>
                 </div>
-              </form>
+              </div>
             </div>
+
+            {/* Contact Form Component - This replaces the inline form */}
+            <ContactForm />
           </div>
         </div>
       </section>

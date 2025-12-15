@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image'; // 1. IMPORT next/image
 
 const slides = [
   {
@@ -12,6 +13,8 @@ const slides = [
     buttonText: 'Explore Our Work',
     buttonLink: '/projects',
     className: 'hero-slide-1',
+    // 2. ADD IMAGE SOURCE (Path relative to your /public folder)
+    imageSrc: '/images/nhaislide1.png', 
   },
   {
     id: 2,
@@ -21,6 +24,8 @@ const slides = [
     buttonText: 'View Rail Capabilities',
     buttonLink: '/infrastructure',
     className: 'hero-slide-2',
+    // 2. ADD IMAGE SOURCE
+    imageSrc: '/images/slide2.png',
   },
 ];
 
@@ -40,11 +45,26 @@ export default function HeroSection() {
       {slides.map((slide, index) => (
         <div
           key={slide.id}
-          className={`absolute inset-0 ${slide.className} flex items-center justify-center text-white transition-opacity duration-1000 ${
+          className={`absolute inset-0 flex items-center justify-center text-white transition-opacity duration-1000 ${
             index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
           }`}
         >
-          <div className="max-w-6xl mx-auto text-left px-4 md:px-8">
+          {/* 3. IMAGE COMPONENT INTEGRATION */}
+          <Image
+            src={slide.imageSrc}
+            alt={slide.title}
+            fill={true} // Makes the image fill the parent div
+            className="object-cover" // Ensures the image covers the area without stretching
+            priority={true} // Recommended for LCP images like a hero banner
+          />
+          {/* END IMAGE COMPONENT */}
+
+          {/* 4. CONTENT OVERLAY */}
+          {/* You may want a darker overlay on the image for readability */}
+          <div className="absolute inset-0 bg-black/50 z-10"></div>
+          
+          {/* TEXT CONTENT */}
+          <div className="max-w-6xl mx-auto text-left px-4 md:px-8 z-20">
             <p className="text-xl uppercase tracking-widest text-amber-400 font-semibold mb-3">
               {slide.category}
             </p>
@@ -66,8 +86,8 @@ export default function HeroSection() {
         </div>
       ))}
 
-      {/* Slide Indicators */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+      {/* Slide Indicators (Remains the same) */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
         {slides.map((_, index) => (
           <button
             key={index}

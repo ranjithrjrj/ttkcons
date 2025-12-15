@@ -39,7 +39,7 @@ export default function HomePage() {
             </div>
             <div className="rounded-lg shadow-2xl overflow-hidden">
               <img
-                src="https://placehold.co/800x500/1e3a8a/FFFFFF?text=Image+Placeholder:+TTK+Office+or+Team"
+                src="https://www.metromane.in/assets/imgs/blogs/blog-1-1.jpg"
                 alt="TTK Construction Office or Team Photo"
                 className="w-full h-auto object-cover"
               />
@@ -90,8 +90,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="rounded-lg shadow-2xl overflow-hidden">
+			{/* image resolution 800x500 */}
               <img
-                src="https://placehold.co/800x500/1e3a8a/FFFFFF?text=Image+Placeholder:+TTK+Machinery+Fleet"
+                src="https://w0.peakpx.com/wallpaper/961/827/HD-wallpaper-asphalt-paver-vogele-super-2100-2-road-construction-concepts-asphalt-paving-construction-machinery.jpg"
                 alt="Image of TTK Construction Machinery Fleet"
                 className="w-full h-auto"
               />
@@ -172,8 +173,9 @@ export default function HomePage() {
             </div>
 
             <div className="rounded-lg shadow-2xl overflow-hidden border-4 border-blue-700">
+			{/* image resolution 800x500 */}
               <img
-                src="https://placehold.co/800x500/1e3a8a/FFFFFF?text=Project+Image:+Dindigul+Theni+Highway"
+                src="https://i0.wp.com/urbanacres.in/wp-content/uploads/2025/02/Delhi-Katra-Expressway-Delayed-by-a-Year-New-Completion-Target-Set-for-2026.jpg"
                 alt="Dindigul Theni Highway Project"
                 className="w-full h-auto"
               />

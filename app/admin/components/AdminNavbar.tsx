@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import LogoutButton from './LogoutButton';
+import { useUnreadCount } from '@/app/admin/contacts/useUnreadCount';
 
 export default function AdminNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -11,6 +12,8 @@ export default function AdminNavbar() {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobileManageOpen, setIsMobileManageOpen] = useState(false);
   const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
+  
+  const unreadCount = useUnreadCount();
 
   return (
     <>
@@ -96,10 +99,15 @@ export default function AdminNavbar() {
                 </Link>
                 <Link
                   href="/admin/contacts"
-                  className="block px-4 py-3 text-sm hover:bg-amber-100 transition-colors border-b border-gray-100"
+                  className="block px-4 py-3 text-sm hover:bg-amber-100 transition-colors border-b border-gray-100 relative"
                 >
                   <i className="fas fa-headset w-5 mr-3 text-[#1e3a8a]"></i>
                   Contact Submissions
+                  {unreadCount > 0 && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                      {unreadCount}
+                    </span>
+                  )}
                 </Link>
                 <Link
                   href="/admin/clients"
@@ -247,10 +255,15 @@ export default function AdminNavbar() {
                     </Link>
                     <Link
                       href="/admin/contacts"
-                      className="block px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-amber-500 hover:text-gray-900"
+                      className="block px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-amber-500 hover:text-gray-900 relative"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <i className="fas fa-headset mr-2"></i> Contact Submissions
+                      {unreadCount > 0 && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                          {unreadCount}
+                        </span>
+                      )}
                     </Link>
                     <Link
                       href="/admin/clients"

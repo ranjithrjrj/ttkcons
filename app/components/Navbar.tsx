@@ -114,10 +114,10 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-md text-gray-900 hover:text-white focus:outline-none"
+            className="md:hidden px-4 py-2 rounded-md text-gray-900 font-bold text-lg hover:text-white focus:outline-none"
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileMenuOpen ? 'CLOSE' : 'MENU'}
           </button>
         </div>
 
