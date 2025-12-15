@@ -155,6 +155,20 @@ export interface JobApplication {
   created_at: string;
 }
 
+export interface ContactSubmission {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  status: 'New' | 'Read';
+  submitted_date: string;
+  created_at: string;
+}
+
+export type { ContactSubmission };
+
 export type ApplicationStatus = 
   | 'Pending Review'
   | 'Under Review'
